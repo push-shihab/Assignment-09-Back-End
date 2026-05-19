@@ -47,6 +47,32 @@ async function run() {
     });
 
     // Creating room by users
+    app.post("/rooms/new", async (req, res) => {
+      const roomData = req.body;
+      const result = await roomCollection.insertOne(roomData);
+      res.json(result);
+    });
+
+    // Updating room data by room owner
+    app.patch("/rooms/update/:id", async (req, res) => {
+      const { id } = req.params;
+      const findData = await roomCollection.findOne({ _id: new ObjectId(id) });
+      const newData = req.body;
+      const updatedData = {
+        $set: {
+          name,
+        },
+      };
+      const result = await roomCollection.updateOne(findData, updatedData);
+      res.json(result);
+    });
+
+    // Deleting a room
+    app.delete("/rooms/delete/:id", async (req, res) => {
+      const { id } = req.params;
+      const result = await roomCollection.deleteOne({ _id: new ObjectId(id) });
+      res.json(result);
+    });
 
     await client.db("admin").command({ ping: 1 });
     console.log("DB connected successfully");

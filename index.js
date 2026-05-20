@@ -28,11 +28,12 @@ async function run() {
 
     const db = client.db("Study-Nook");
     const roomCollection = db.collection("rooms");
+    const bookingCollection = db.collection("bookings");
 
     // Getting all rooms data
     app.get("/rooms", async (req, res) => {
       const result = await roomCollection.find().toArray();
-      res.json(result);
+      res.send(result);
     });
     // Getting 6 latest rooms data
     app.get("/rooms/latest", async (req, res) => {
@@ -42,7 +43,15 @@ async function run() {
     // Getting individual room data
     app.get("/rooms/:id", async (req, res) => {
       const { id } = req.params;
-      const result = await roomCollection.find({ _id: new ObjectId(id) });
+      const result = await roomCollection
+        .find({ _id: new ObjectId(id) })
+        .toArray();
+      res.json(result);
+    });
+    // Getting all rooms of individual owner
+    app.get("/rooms/self/:id", async (req, res) => {
+      const { id } = req.params;
+      const result = await roomCollection.find({ id: id }).toArray();
       res.json(result);
     });
 
@@ -50,6 +59,12 @@ async function run() {
     app.post("/rooms/new", async (req, res) => {
       const roomData = req.body;
       const result = await roomCollection.insertOne(roomData);
+      res.json(result);
+    });
+    // Booking room by users
+    app.post("/rooms/book", async (req, res) => {
+      const roomData = req.body;
+      const result = await bookingCollection.insertOne(roomData);
       res.json(result);
     });
 

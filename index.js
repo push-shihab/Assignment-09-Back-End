@@ -67,6 +67,12 @@ async function run() {
       const result = await bookingCollection.insertOne(roomData);
       res.json(result);
     });
+    // All bookings by individual user
+    app.get("/rooms/bookings/:userId", async (req, res) => {
+      const { userId } = req.params;
+      const result = await bookingCollection.find({ userId: userId }).toArray();
+      res.json(result);
+    });
 
     // Updating room data by room owner
     app.patch("/rooms/update/:id", async (req, res) => {

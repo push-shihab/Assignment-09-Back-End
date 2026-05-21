@@ -81,7 +81,13 @@ async function run() {
       const newData = req.body;
       const updatedData = {
         $set: {
-          name,
+          name: newData.name,
+          image: newData.image,
+          rate: newData.rate,
+          floor: newData.floor,
+          capacity: newData.capacity,
+          description: newData.description,
+          amenities: newData.amenities,
         },
       };
       const result = await roomCollection.updateOne(findData, updatedData);

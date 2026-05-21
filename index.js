@@ -40,6 +40,21 @@ async function run() {
       const result = await roomCollection.find().limit(3).toArray();
       res.json(result);
     });
+    // Booking conflict route
+    app.get("/rooms/bookings", async (req, res) => {
+      const { roomId, date, startTime, endTime } = req.query;
+      const isConflict = await bookingCollection
+        .find({
+          $and: [
+            { roomId: roomId },
+            { date: date },
+            { startTime: startTime },
+            { endTime: endTime },
+          ],
+        })
+        .toArray();
+      res.json(isConflict);
+    });
     // Getting individual room data
     app.get("/rooms/:id", async (req, res) => {
       const { id } = req.params;
@@ -65,6 +80,14 @@ async function run() {
     app.post("/rooms/book", async (req, res) => {
       const roomData = req.body;
       const result = await bookingCollection.insertOne(roomData);
+      if (result.acknowledged) {
+        await roomCollection.updateOne(
+          { _id: new ObjectId(roomData.roomId) },
+          {
+            $inc: { bookings: 1 },
+          },
+        );
+      }
       res.json(result);
     });
     // All bookings by individual user
@@ -94,10 +117,26 @@ async function run() {
       res.json(result);
     });
 
+    // Canceling a booking
+    app.patch("/rooms/bookings/cancel/:id", async (req, res) => {
+      const { id } = req.params;
+      const findData = await bookingCollection.findOne({
+        _id: new ObjectId(id),
+      });
+      const updatedData = {
+        $set: { status: "Canceled" },
+      };
+      const result = await bookingCollection.updateOne(findData, updatedData);
+      res.json(result);
+    });
+
     // Deleting a room
     app.delete("/rooms/delete/:id", async (req, res) => {
       const { id } = req.params;
       const result = await roomCollection.deleteOne({ _id: new ObjectId(id) });
+      if (result.acknowledged) {
+        await bookingCollection.deleteOne({ roomId: id });
+      }
       res.json(result);
     });
 

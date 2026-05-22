@@ -12,6 +12,7 @@ app.get("/", (req, res) => {
 });
 
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const { createRemoteJWKSet, jwtVerify } = require("jose-cjs");
 const uri = `mongodb+srv://${process.env.MONGODB_USERNAME}:${process.env.MONGODB_PASSWORD}@cluster0.a82ocix.mongodb.net/?appName=Cluster0`;
 
 const client = new MongoClient(uri, {
@@ -29,6 +30,23 @@ async function run() {
     const db = client.db("Study-Nook");
     const roomCollection = db.collection("rooms");
     const bookingCollection = db.collection("bookings");
+
+    const JWKS = createRemoteJWKSet(
+      new URL("http://localhost:3000/api/auth/jwks"),
+    );
+
+    const verifyToken = async (req, res, next) => {
+      const token = req.headers.authorization;
+      if (!token) {
+        return res.status(401).json({ message: "unauthurized" });
+      }
+      try {
+        const { payload } = await jwtVerify(token, JWKS);
+        next();
+      } catch (error) {
+        return res.status(401).json({ message: error.message });
+      }
+    };
 
     // Getting all rooms data
     app.get("/rooms", async (req, res) => {
@@ -56,7 +74,7 @@ async function run() {
       res.json(isConflict);
     });
     // Getting individual room data
-    app.get("/rooms/:id", async (req, res) => {
+    app.get("/rooms/:id", verifyToken, async (req, res) => {
       const { id } = req.params;
       const result = await roomCollection
         .find({ _id: new ObjectId(id) })
@@ -64,14 +82,14 @@ async function run() {
       res.json(result);
     });
     // Getting all rooms of individual owner
-    app.get("/rooms/self/:id", async (req, res) => {
+    app.get("/rooms/self/:id", verifyToken, async (req, res) => {
       const { id } = req.params;
       const result = await roomCollection.find({ id: id }).toArray();
       res.json(result);
     });
 
     // Creating room by users
-    app.post("/rooms/new", async (req, res) => {
+    app.post("/rooms/new", verifyToken, async (req, res) => {
       const roomData = req.body;
       const result = await roomCollection.insertOne(roomData);
       res.json(result);
@@ -91,7 +109,7 @@ async function run() {
       res.json(result);
     });
     // All bookings by individual user
-    app.get("/rooms/bookings/:userId", async (req, res) => {
+    app.get("/rooms/bookings/:userId", verifyToken, async (req, res) => {
       const { userId } = req.params;
       const result = await bookingCollection.find({ userId: userId }).toArray();
       res.json(result);

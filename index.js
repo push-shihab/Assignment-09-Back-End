@@ -25,14 +25,14 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
 
     const db = client.db("Study-Nook");
     const roomCollection = db.collection("rooms");
     const bookingCollection = db.collection("bookings");
 
     const JWKS = createRemoteJWKSet(
-      new URL("http://localhost:3000/api/auth/jwks"),
+      new URL(`${process.env.CLIENT_URL}/api/auth/jwks`),
     );
 
     const verifyToken = async (req, res, next) => {
@@ -58,11 +58,7 @@ async function run() {
     });
     // Getting 6 latest rooms data
     app.get("/rooms/latest", async (req, res) => {
-      const result = await roomCollection
-        .find()
-        .sort({ bookings: -1 })
-        .limit(6)
-        .toArray();
+      const result = await roomCollection.find().limit(6).toArray();
       res.json(result);
     });
     // Booking conflict route
@@ -165,7 +161,7 @@ async function run() {
       res.json(result);
     });
 
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log("DB connected successfully");
   } finally {
     // await client.close();

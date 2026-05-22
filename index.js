@@ -50,28 +50,35 @@ async function run() {
 
     // Getting all rooms data
     app.get("/rooms", async (req, res) => {
-      const result = await roomCollection.find().toArray();
+      const result = await roomCollection
+        .find()
+        .sort({ bookings: -1 })
+        .toArray();
       res.send(result);
     });
     // Getting 6 latest rooms data
     app.get("/rooms/latest", async (req, res) => {
-      const result = await roomCollection.find().limit(3).toArray();
+      const result = await roomCollection
+        .find()
+        .sort({ bookings: -1 })
+        .limit(6)
+        .toArray();
       res.json(result);
     });
     // Booking conflict route
     app.get("/rooms/bookings", async (req, res) => {
       const { roomId, date, startTime, endTime } = req.query;
-      const isConflict = await bookingCollection
+
+      const result = await bookingCollection
         .find({
-          $and: [
-            { roomId: roomId },
-            { date: date },
-            { startTime: startTime },
-            { endTime: endTime },
-          ],
+          roomId: roomId,
+          date: date,
+          startTime: { $lt: endTime },
+          endTime: { $gt: startTime },
         })
         .toArray();
-      res.json(isConflict);
+
+      res.json(result);
     });
     // Getting individual room data
     app.get("/rooms/:id", verifyToken, async (req, res) => {

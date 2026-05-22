@@ -141,8 +141,12 @@ async function run() {
     // Canceling a booking
     app.patch("/rooms/bookings/cancel/:id", async (req, res) => {
       const { id } = req.params;
+      const { date, startTime, endTime } = req.body;
       const findData = await bookingCollection.findOne({
         _id: new ObjectId(id),
+        date,
+        startTime,
+        endTime,
       });
       const updatedData = {
         $set: { status: "Canceled" },
